@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cpf-cnpj-validator": "^1.0.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^5.5.1",
+    "jsonwebtoken": "^9.0.2",
+    "mysql": "^2.18.1",
+    "random": "^4.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.1.2",
+    "uuid": "^9.0.1"
+  }
+}
