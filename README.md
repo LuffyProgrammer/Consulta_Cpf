@@ -1,4 +1,25 @@
+
+
 # Documentação de Instalação e Uso da API
+
+## Índice
+
+1. [Pré-requisitos](#pré-requisitos)
+2. [Passo a Passo de Instalação](#passo-a-passo-de-instalação)
+   - [Obtenha o Código da API](#1-obtenha-o-código-da-api)
+   - [Configurar o PowerShell para Permitir Scripts](#2-configurar-o-powershell-para-permitir-scripts)
+   - [Executar o Script de Configuração](#3-executar-o-script-de-configuração)
+   - [Executar o Script de Instalação](#4-executar-o-script-de-instalação)
+   - [Configuração do Arquivo `.env`](#5-configuração-do-arquivo-env)
+   - [Iniciar a API Manualmente](#6-iniciar-a-api-manualmente)
+   - [Monitoramento e Logs](#7-monitoramento-e-logs)
+3. [Endpoints da API](#endpoints-da-api)
+   - [1. Gerar Token de Autenticação](#1-gerar-token-de-autenticação)
+   - [2. Consulta por CPF](#2-consulta-por-cpf)
+   - [3. Consulta por CNPJ](#3-consulta-por-cnpj)
+   - [4. Calcular Tempo Restante até Expiração do Token](#4-calcular-tempo-restante-até-expiração-do-token)
+4. [Estrutura de Respostas e Códigos de Erro](#estrutura-de-respostas-e-códigos-de-erro)
+5. [Considerações de Segurança](#considerações-de-segurança)
 
 ## Pré-requisitos
 
@@ -7,13 +28,12 @@ Certifique-se de que seu ambiente de desenvolvimento atenda aos seguintes requis
 - **Node.js**: Necessário para executar a API. Se não estiver instalado, o script de instalação cuidará disso automaticamente.
 - **npm**: Instalado automaticamente junto com o Node.js.
 - **PM2**: Gerenciador de processos para manter a API rodando em segundo plano.
-- **Python**: Necessário para executar o bot do Telegram.
 
 ## Passo a Passo de Instalação
 
 ### 1. Obtenha o Código da API
 
-Certifique-se de ter o código-fonte da API disponível no seu sistema.
+Certifique-se de ter o código-fonte da API disponível no seu sistema. Você pode clonar o repositório do GitHub ou transferir os arquivos diretamente para o seu ambiente de desenvolvimento.
 
 ### 2. Configurar o PowerShell para Permitir Scripts
 
@@ -58,7 +78,7 @@ if (-Not (Test-Path ".env")) {
 
     @"
 # Configurações do Servidor
-PORT=80
+PORT=8080
 
 # Configurações do Token JWT
 TOKEN_DURATION=30
@@ -69,10 +89,6 @@ API_KEY=$apiKey
 # Configurações do Ngrok
 NGROK_TOKEN=token do ngrok
 NGROK_DOMAIN=dominio-freely.ngrok-free.app
-
-# Configurações do Telegram Bot
-AUTHORIZED_USERS=1102456807,1102456807
-BOT_TOKEN=6540422218:AAHsy9xQHGhEODnBrsLQI_RV1Q0n5H0qjMY
 "@ | Out-File -FilePath ".env"
     Write-Host ".env configurado com sucesso!"
 } else {
@@ -80,12 +96,12 @@ BOT_TOKEN=6540422218:AAHsy9xQHGhEODnBrsLQI_RV1Q0n5H0qjMY
 }
 
 # Executar scripts
-Start-Process "cmd.exe" -ArgumentList "/c start cmd.exe /k 'npm install && pm2 start api.js --name sua_api && python bot.py'" -NoNewWindow
+Start-Process "cmd.exe" -ArgumentList "/c start cmd.exe /k 'npm install && pm2 start api.js --name sua_api'" -NoNewWindow
 ```
 
 ### 4. Executar o Script de Instalação
 
-Execute o script `setup.ps1` para configurar o ambiente e iniciar a API e o bot:
+Execute o script `setup.ps1` para configurar o ambiente e iniciar a API:
 
 ```powershell
 .\setup.ps1
@@ -97,7 +113,7 @@ Após a execução do script `setup.ps1`, o arquivo `.env` será criado automati
 
 ```ini
 # Configurações do Servidor
-PORT=80
+PORT=8080
 
 # Configurações do Token JWT
 TOKEN_DURATION=30
@@ -108,13 +124,9 @@ API_KEY=SuaChaveDaAPI
 # Configurações do Ngrok
 NGROK_TOKEN=dfv dfv dfg
 NGROK_DOMAIN=freely.ngrok-free.app
-
-# Configurações do Telegram Bot
-AUTHORIZED_USERS=1102456807,1102456807
-BOT_TOKEN=gdfgdfgdfghd
 ```
 
-### 6. Iniciar a API e o Bot Manualmente
+### 6. Iniciar a API Manualmente
 
 Se preferir iniciar manualmente, você pode usar os seguintes comandos:
 
@@ -122,12 +134,6 @@ Se preferir iniciar manualmente, você pode usar os seguintes comandos:
 
   ```bash
   pm2 start api.js --name sua_api
-  ```
-
-- **Iniciar o Bot do Telegram**:
-
-  ```bash
-  python bot.py
   ```
 
 ### 7. Monitoramento e Logs
@@ -159,19 +165,28 @@ Utilize o PM2 para monitorar o status da API, verificar logs e reiniciar a aplic
 - **Método**: `GET`
 - **Rota**: `/gerar-token`
 
+**Descrição**: Gera um novo token JWT para autenticação.
+
+**Parâmetros de Cabeçalho**:
+- `x-api-key`: Chave da API (string) - **obrigatório**.
+
 **Exemplo de Requisição**:
 
 ```bash
 curl -X GET \
   -H "x-api-key: SUA_CHAVE_DA_API" \
-  http://localhost:3000/gerar-token
+  http://localhost:8080/gerar-token
 ```
 
 **Resposta Esperada**:
 
 ```json
 {
-  "token": "SEU_TOKEN_JWT"
+  "token": "SEU_TOKEN_JWT",
+  "uid": "ID_UNICO_DO_USUARIO",
+  "expiresIn": "30 days",
+  "expirationTimestamp": 1681234567,
+  "formattedExpirationDate": "01/01/2024 12:00:00"
 }
 ```
 
@@ -180,34 +195,162 @@ curl -X GET \
 - **Método**: `POST`
 - **Rota**: `/consultar-cpf`
 
+**Descrição**: Consulta informações detalhadas sobre um CPF.
+
+**Corpo da Requisição**:
+
+```json
+{
+  "cpf": "NUMERO_DO_CPF"
+}
+```
+
 **Exemplo de Requisição**:
 
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN" \
-  -d '{"cpf": "NUMERO_DO_CPF"}' \
-  http://localhost:3000/consultar-cpf
+  -d '{"cpf": "12345678909"}' \
+  http://localhost:8080/consultar-cpf
 ```
 
 **Resposta Esperada**:
 
 ```json
 {
-  "cpf": "123.456.789-00",
-  "nome": "João da Silva",
-  "nascimento": "01/01/1980",
-  "status": "Ativo",
-  "dados_adicionais": { ... }
+  "records": [
+    {
+      "nome": "João da Silva",
+      "cpf": "123.456.789-00",
+      "dataNascimento": "01/01/1980",
+      "sexo": "Masculino",
+      "endereco": {
+        "logradouro": "Rua das Flores",
+        "numero": "123",
+        "bairro": "Centro",
+        "municipio": "São Paulo",
+        "siglaUf": "SP",
+        "cep": "01234-567"
+      }
+    }
+  ],
+  "endereco": {
+    "logradouro": "Rua das Flores",
+    "numero": "123",
+    "complemento": "Apto 101",
+    "bairro": "Centro",
+    "municipio": "São Paulo",
+    "siglaUf": "SP",
+    "cep": "01234-567"
+  }
 }
 ```
 
-### 3. Rotas Protegidas
+### 3. Consulta por CNPJ
 
-Todas as rotas que realizam consultas são protegidas por **Bearer Tokens**. Inclua o token JWT obtido na rota `/gerar-token` no cabeçalho de cada requisição subsequente.
+- **Método**: `GET`
+- **Rota**: `/consultar-cnpj`
+
+**Descrição**: Consulta informações detalhadas sobre um CNPJ.
+
+**Parâmetros da Consulta**:
+- `cnpj`: CNPJ a ser consultado (string) - **obrigatório**.
+
+**Exemplo de Re
+
+quisição**:
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  http://localhost:8080/consultar-cnpj?cnpj=12345678000195
+```
+
+**Resposta Esperada**:
+
+```json
+{
+  "estabelecimento": {
+    "cnpj": "12.345.678/0001-95",
+    "razao_social": "Empresa Exemplo Ltda",
+    "situacao_cadastral": "Ativa",
+    "data_situacao_cadastral": "01/01/2020",
+    "email": "contato@empresa.com",
+    "telefone1": "(11) 1234-5678",
+    "logradouro": "Avenida das Empresas",
+    "numero": "1000",
+    "bairro": "Industrial",
+    "cep": "12345-678",
+    "cidade": {
+      "nome": "São Paulo"
+    },
+    "estado": {
+      "sigla": "SP"
+    }
+  }
+}
+```
+
+### 4. Calcular Tempo Restante até Expiração do Token
+
+- **Método**: `GET`
+- **Rota**: `/tempo-expiracao`
+
+**Descrição**: Calcula o tempo restante até a expiração do token JWT.
+
+**Exemplo de Requisição**:
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  http://localhost:8080/tempo-expiracao
+```
+
+**Resposta Esperada**:
+
+```json
+{
+  "success": true,
+  "message": "O token é válido.",
+  "data": {
+    "timeLeft": 1200,
+    "expirationTimestamp": 1681234567,
+    "userData": {
+      "usuarioId": "ID_UNICO_DO_USUARIO",
+      "exp": 1681234567
+    }
+  }
+}
+```
+
+## Estrutura de Respostas e Códigos de Erro
+
+### Códigos de Resposta Comuns
+
+- **200 OK**: A solicitação foi bem-sucedida e a resposta contém os dados solicitados.
+- **400 Bad Request**: A solicitação é inválida ou faltando parâmetros obrigatórios.
+- **401 Unauthorized**: O token de autenticação não foi fornecido ou é inválido.
+- **403 Forbidden**: O token de autenticação é válido, mas o usuário não tem permissão para acessar o recurso.
+- **404 Not Found**: O recurso solicitado não foi encontrado.
+- **500 Internal Server Error**: Ocorreu um erro no servidor ao processar a solicitação.
+
+### Exemplo de Mensagem de Erro
+
+```json
+{
+  "error": "CPF é obrigatório"
+}
+```
 
 ## Considerações de Segurança
 
 - **Chave Secreta**: Certifique-se de que a `SECRET_KEY` no arquivo `.env` seja segura e não seja compartilhada publicamente.
 - **Autenticação**: Use sempre tokens JWT para acessar rotas protegidas.
 - **API Key**: Mantenha a API Key configurada no `.env` confidencial e acessível apenas por sistemas autorizados.
+
+## Monitoramento e Manutenção
+
+- **Monitoramento**: Utilize ferramentas como PM2 para monitorar a saúde da aplicação e coletar logs.
+- **Atualizações**: Mantenha suas dependências atualizadas e revise o código para garantir que ele atenda aos padrões de segurança mais recentes.
+- **Backups**: Realize backups regulares da base de dados e da configuração do servidor.
